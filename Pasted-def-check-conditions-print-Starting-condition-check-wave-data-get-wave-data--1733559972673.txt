@@ -1,0 +1,60 @@
+def check_conditions():
+    print("Starting condition check...")
+    wave_data = get_wave_data()
+    if not wave_data:
+        print("Failed to get wave data")
+        return False  # Add return value
+
+    print("Wave data received")
+    tide_data = get_tide_data()
+    if not tide_data:
+        print("Failed to get tide data")
+        return False  # Add return value
+
+    print("Tide data received")
+
+    try:
+        if 'hours' not in wave_data:
+            print(f"Unexpected wave data format: {wave_data}")
+            return False
+
+        good_conditions = []
+        processed_times = set()  # Track processed times to avoid duplicates
+
+        for hour in wave_data['hours']:
+            if hour['time'] in processed_times:
+                continue
+
+            if 'waveHeight' in hour and 'sg' in hour['waveHeight']:
+                    wave_height = hour['waveHeight']['sg']
+                    windSpeed = hour['windSpeed']['sg'] if 'windSpeed' in hour and 'sg' in hour['windSpeed'] else 0
+                    wind_direction = hour['windDirection']['sg'] if 'windDirection' in hour and 'sg' in hour['windDirection'] else 0
+
+                    if wave_height >= WAVE_HEIGHT_THRESHOLD and is_daylight(hour['time']):
+                        near_low_tide, tide_time = is_near_low_tide(hour['time'], tide_data)
+
+                        if near_low_tide:
+                            time = datetime.strptime(hour['time'], '%Y-%m-%dT%H:%M:%S+00:00')
+                            good_conditions.append({
+                                'time': time.strftime('%Y-%m-%d %H:%M'),
+                                'wave_height': round(wave_height, 1),
+                                'windSpeed': round(wind_speed, 1),
+                                'wind_direction': round(wind_direction),
+                                'low_tide_time': tide_time.strftime('%H:%M')
+                            })
+                        processed_times.add(hour['time'])
+
+        if good_conditions:
+            print(f"Found {len(good_conditions)} good conditions during daylight hours")
+            grouped_conditions = group_consecutive_times(good_conditions)
+            send_email(grouped_conditions)
+            send_whatsapp(grouped_conditions)
+            return True
+        else:
+            print("No ideal conditions found during daylight hours")
+            return False
+
+    except Exception as e:
+        print(f"Error processing data: {e}")
+        return False
+

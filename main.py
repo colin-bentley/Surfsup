@@ -24,10 +24,22 @@ KILLINEY = LocationInfo(
 params = {
     'lat': KILLINEY.latitude,
     'lng': KILLINEY.longitude,
-    'params': 'waveHeight',
+    'params': 'waveHeight,windDirection,windSpeed',
     'start': datetime.now().isoformat(),
     'end': (datetime.now() + timedelta(days=2)).isoformat()
 }
+
+def degrees_to_cardinal(degrees):
+    """Convert degrees to cardinal directions"""
+    directions = [
+        "N", "NNE", "NE", "ENE", 
+        "E", "ESE", "SE", "SSE",
+        "S", "SSW", "SW", "WSW", 
+        "W", "WNW", "NW", "NNW"
+    ]
+    # Divide the degrees by 22.5 (360/16) to get the index
+    index = int((degrees + 11.25) % 360 // 22.5)
+    return directions[index]
 
 def is_daylight(check_time):
     """Check if time is during daylight hours based on actual sunrise/sunset"""
@@ -55,28 +67,16 @@ def format_time_range(start_time_str, end_time_str):
     return f"{start_time.strftime('%A %H:%M')}-{end_time.strftime('%H:%M')}"
 
 def group_consecutive_times(conditions):
-            if not conditions:
-                return []
-            grouped = []
-            current_group = [conditions[0]]
-            for i in range(1, len(conditions)):
-                current = datetime.strptime(conditions[i]['time'], '%Y-%m-%d %H:%M')
-                previous = datetime.strptime(current_group[-1]['time'], '%Y-%m-%d %H:%M')
-                if (current - previous).total_seconds() <= 7200:
-                    current_group.append(conditions[i])
-                else:
-                    # Format the time range using the new format
-                    time_range = format_time_range(
-                        current_group[0]['time'],
-                        current_group[-1]['time']
-                    )
-                    grouped.append({
-                        'time': time_range,
-                        'wave_height': f"{min(float(c['wave_height']) for c in current_group):.1f}-{max(float(c['wave_height']) for c in current_group):.1f}m",
-                        'low_tide_time': current_group[0]['low_tide_time']
-                    })
-                    current_group = [conditions[i]]
-            # Add the last group
+    if not conditions:
+        return []
+    grouped = []
+    current_group = [conditions[0]]
+    for i in range(1, len(conditions)):
+        current = datetime.strptime(conditions[i]['time'], '%Y-%m-%d %H:%M')
+        previous = datetime.strptime(current_group[-1]['time'], '%Y-%m-%d %H:%M')
+        if (current - previous).total_seconds() <= 7200:
+            current_group.append(conditions[i])
+        else:
             time_range = format_time_range(
                 current_group[0]['time'],
                 current_group[-1]['time']
@@ -84,9 +84,25 @@ def group_consecutive_times(conditions):
             grouped.append({
                 'time': time_range,
                 'wave_height': f"{min(float(c['wave_height']) for c in current_group):.1f}-{max(float(c['wave_height']) for c in current_group):.1f}m",
+                'windSpeed': f"{round(min(float(c['windSpeed']) * 3.6 for c in current_group))}-{round(max(float(c['windSpeed']) * 3.6 for c in current_group))}kph",
+                'windDirection': degrees_to_cardinal(float(current_group[0]['windDirection'])),
                 'low_tide_time': current_group[0]['low_tide_time']
             })
-            return grouped
+            current_group = [conditions[i]]
+
+    # Add the last group
+    time_range = format_time_range(
+        current_group[0]['time'],
+        current_group[-1]['time']
+    )
+    grouped.append({
+        'time': time_range,
+        'wave_height': f"{min(float(c['wave_height']) for c in current_group):.1f}-{max(float(c['wave_height']) for c in current_group):.1f}m",
+        'windSpeed': f"{round(min(float(c['windSpeed']) * 3.6 for c in current_group))}-{round(max(float(c['windSpeed']) * 3.6 for c in current_group))}kph",
+         'windDirection': degrees_to_cardinal(float(current_group[0]['windDirection'])),
+        'low_tide_time': current_group[0]['low_tide_time']
+    })
+    return grouped
 
 def get_wave_data():
     url = 'https://api.stormglass.io/v2/weather/point'
@@ -135,12 +151,11 @@ def is_near_low_tide(check_time, tide_data):
 
 def send_email(good_conditions):
     message_text = "🏄 Surf Alert - Killiney Beach!\n\n"
-
     for condition in good_conditions:
         message_text += f"{condition['time']}\n"
-        message_text += f"Wave Height: {condition['wave_height']}\n"
+        message_text += f"Wave Height: {condition['wave_height']}m\n"
+        message_text += f"Wind: {condition['windSpeed']} from {condition['windDirection']}\n"
         message_text += f"Low Tide at: {condition['low_tide_time']}\n\n"
-
     msg = MIMEText(message_text)
     msg['Subject'] = '🏄 Surf Alert - Killiney Beach'
     msg['From'] = EMAIL_ADDRESS
@@ -162,7 +177,8 @@ def send_whatsapp(good_conditions):
 
     for condition in good_conditions:
         message_text += f"{condition['time']}\n"
-        message_text += f"Wave Height: {condition['wave_height']}\n"
+        message_text += f"Wave Height: {condition['wave_height']}m\n"
+        message_text += f"Wind: {condition['windSpeed']} from {condition['windDirection']}\n"
         message_text += f"Low Tide at: {condition['low_tide_time']}\n\n"
     try:
         client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -205,21 +221,26 @@ def check_conditions():
                 continue
 
             if 'waveHeight' in hour and 'sg' in hour['waveHeight']:
-                wave_height = hour['waveHeight']['sg']
+                    wave_height = hour['waveHeight']['sg']
+                    wind_speed = hour['windSpeed']['sg'] if 'windSpeed' in hour and 'sg' in hour['windSpeed'] else 0
+                    wind_direction = hour['windDirection']['sg'] if 'windDirection' in hour and 'sg' in hour['windDirection'] else 0
 
-                if wave_height >= WAVE_HEIGHT_THRESHOLD and is_daylight(hour['time']):
-                    near_low_tide, tide_time = is_near_low_tide(hour['time'], tide_data)
+                    if wave_height >= WAVE_HEIGHT_THRESHOLD and is_daylight(hour['time']):
+                        near_low_tide, tide_time = is_near_low_tide(hour['time'], tide_data)
 
-                    if near_low_tide:
-                        time = datetime.strptime(hour['time'], '%Y-%m-%dT%H:%M:%S+00:00')
-                        good_conditions.append({
-                            'time': time.strftime('%Y-%m-%d %H:%M'),
-                            'wave_height': round(wave_height, 1),
-                            'low_tide_time': tide_time.strftime('%H:%M')
-                        })
+                        if near_low_tide:
+                            time = datetime.strptime(hour['time'], '%Y-%m-%dT%H:%M:%S+00:00')
+                            good_conditions.append({
+                                'time': time.strftime('%Y-%m-%d %H:%M'),
+                                'wave_height': round(wave_height, 1),
+                                'windSpeed': round(wind_speed, 1),
+                                'windDirection': round(wind_direction),
+                                'low_tide_time': tide_time.strftime('%H:%M')
+                            })
                         processed_times.add(hour['time'])
 
         if good_conditions:
+            print("Debug - First condition:", good_conditions[0])
             print(f"Found {len(good_conditions)} good conditions during daylight hours")
             grouped_conditions = group_consecutive_times(good_conditions)
             send_email(grouped_conditions)
