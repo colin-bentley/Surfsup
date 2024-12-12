@@ -8,26 +8,39 @@ from astral import LocationInfo
 from astral.sun import sun
 
 # Configuration
-WAVE_HEIGHT_THRESHOLD = 1.2
+WAVE_HEIGHT_THRESHOLD = 1.0
 TIDE_WINDOW_HOURS = 2
 
-# Killiney Beach location info
-KILLINEY = LocationInfo(
-    name="Killiney Beach",
-    region="Ireland",
-    timezone="Europe/Dublin",
-    latitude=53.2557,
-    longitude=-6.1124
-)
+class SurfLocation:
+    def __init__(self, name, region, timezone, latitude, longitude):
+        self.info = LocationInfo(name=name, region=region, timezone=timezone, 
+                               latitude=latitude, longitude=longitude)
+        self.params = {
+            'lat': latitude,
+            'lng': longitude,
+            'params': 'waveHeight,windDirection,windSpeed',
+            'start': datetime.now().isoformat(),
+            'end': (datetime.now() + timedelta(days=5)).isoformat()
+        }
 
-# Killiney Beach coordinates for API
-params = {
-    'lat': KILLINEY.latitude,
-    'lng': KILLINEY.longitude,
-    'params': 'waveHeight,windDirection,windSpeed',
-    'start': datetime.now().isoformat(),
-    'end': (datetime.now() + timedelta(days=2)).isoformat()
-}
+# Define surf locations
+LOCATIONS = [
+    SurfLocation(
+        name="Killiney Beach",
+        region="Ireland",
+        timezone="Europe/Dublin",
+        latitude=53.2557,
+        longitude=-6.1124
+    ),
+    # Add your new location here, for example:
+    SurfLocation(
+        name="Bundoran",  # Example second location
+        region="Ireland",
+        timezone="Europe/Dublin",
+        latitude=54.4833,
+        longitude=-8.2833
+    )
+]
 
 def degrees_to_cardinal(degrees):
     """Convert degrees to cardinal directions"""
@@ -104,11 +117,11 @@ def group_consecutive_times(conditions):
     })
     return grouped
 
-def get_wave_data():
+def get_wave_data(location):
     url = 'https://api.stormglass.io/v2/weather/point'
     headers = {'Authorization': STORMGLASS_API_KEY}
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response = requests.get(url, params=location.params, headers=headers, timeout=10)
         print(f"Wave API Status Code: {response.status_code}")
         return response.json()
     except requests.Timeout:
@@ -118,13 +131,13 @@ def get_wave_data():
         print(f"Error getting wave data: {e}")
         return None
 
-def get_tide_data():
+def get_tide_data(location):
     url = 'https://api.stormglass.io/v2/tide/extremes/point'
     tide_params = {
-        'lat': KILLINEY.latitude,
-        'lng': KILLINEY.longitude,
+        'lat': location.info.latitude,
+        'lng': location.info.longitude,
         'start': datetime.now().isoformat(),
-        'end': (datetime.now() + timedelta(days=2)).isoformat()
+        'end': (datetime.now() + timedelta(days=5)).isoformat()
     }
     headers = {'Authorization': STORMGLASS_API_KEY}
     try:
@@ -156,6 +169,7 @@ def send_email(good_conditions):
         message_text += f"Wave Height: {condition['wave_height']}m\n"
         message_text += f"Wind: {condition['windSpeed']} from {condition['windDirection']}\n"
         message_text += f"Low Tide at: {condition['low_tide_time']}\n\n"
+        message_text += "https://www.windguru.cz/47766/\n\n"
     msg = MIMEText(message_text)
     msg['Subject'] = '🏄 Surf Alert - Killiney Beach'
     msg['From'] = EMAIL_ADDRESS
@@ -195,10 +209,12 @@ def send_whatsapp(good_conditions):
 
 def check_conditions():
     print("Starting condition check...")
-    wave_data = get_wave_data()
-    if not wave_data:
-        print("Failed to get wave data")
-        return False  # Add return value
+    for location in LOCATIONS:
+        print(f"\nChecking conditions for {location.info.name}...")
+        wave_data = get_wave_data(location)
+        if not wave_data:
+            print(f"Failed to get wave data for {location.info.name}")
+            continue
 
     print("Wave data received")
     tide_data = get_tide_data()
@@ -244,7 +260,6 @@ def check_conditions():
             print(f"Found {len(good_conditions)} good conditions during daylight hours")
             grouped_conditions = group_consecutive_times(good_conditions)
             send_email(grouped_conditions)
-            send_whatsapp(grouped_conditions)
             return True
         else:
             print("No ideal conditions found during daylight hours")
