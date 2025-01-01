@@ -255,7 +255,7 @@ def check_conditions():
             print("Debug - First condition:", good_conditions[0])
             print(f"Found {len(good_conditions)} good conditions during daylight hours")
             grouped_conditions = group_consecutive_times(good_conditions)
-            send_email(grouped_conditions)
+            send_email(grouped_conditions, location)
             return True
         else:
             print("No ideal conditions found during daylight hours")
