@@ -23,14 +23,30 @@ class SurfLocation:
             'end': (datetime.now() + timedelta(days=5)).isoformat()
         }
 
-# Define location
-KILLINEY = SurfLocation(
-    name="Killiney Beach",
-    region="Ireland",
-    timezone="Europe/Dublin",
-    latitude=53.2557,
-    longitude=-6.1124
-)
+# Define locations
+LOCATIONS = [
+    SurfLocation(
+        name="Killiney Beach",
+        region="Ireland",
+        timezone="Europe/Dublin",
+        latitude=53.2557,
+        longitude=-6.1124
+    ),
+    SurfLocation(
+        name="Bundoran",
+        region="Ireland", 
+        timezone="Europe/Dublin",
+        latitude=54.4833,
+        longitude=-8.2833
+    ),
+    SurfLocation(
+        name="Lahinch",
+        region="Ireland",
+        timezone="Europe/Dublin",
+        latitude=52.9349,
+        longitude=-9.3442
+    )
+]
 
 def degrees_to_cardinal(degrees):
     """Convert degrees to cardinal directions"""
@@ -44,10 +60,10 @@ def degrees_to_cardinal(degrees):
     index = int((degrees + 11.25) % 360 // 22.5)
     return directions[index]
 
-def is_daylight(check_time):
+def is_daylight(check_time, location):
     """Check if time is during daylight hours based on actual sunrise/sunset"""
     time = datetime.strptime(check_time, '%Y-%m-%dT%H:%M:%S+00:00')
-    s = sun(KILLINEY.observer, date=time.date())
+    s = sun(location.info, date=time.date())
 
     # Convert time to naive datetime for comparison
     time = time.replace(tzinfo=None)
@@ -152,8 +168,8 @@ def is_near_low_tide(check_time, tide_data):
                 return True, tide_time
     return False, None
 
-def send_email(good_conditions):
-    message_text = "🏄 Surf Alert - Killiney Beach!\n\n"
+def send_email(good_conditions, location):
+    message_text = f"🏄 Surf Alert - {location.info.name}!\n\n"
     for condition in good_conditions:
         message_text += f"{condition['time']}\n"
         message_text += f"Wave Height: {condition['wave_height']}m\n"
@@ -199,11 +215,14 @@ def send_whatsapp(good_conditions):
 
 def check_conditions():
     print("Starting condition check...")
-    print(f"\nChecking conditions for {KILLINEY.info.name}...")
-    wave_data = get_wave_data(KILLINEY)
-    if not wave_data:
-        print(f"Failed to get wave data for {KILLINEY.info.name}")
-        return False
+    all_conditions = []
+    
+    for location in LOCATIONS:
+        print(f"\nChecking conditions for {location.info.name}...")
+        wave_data = get_wave_data(location)
+        if not wave_data:
+            print(f"Failed to get wave data for {location.info.name}")
+            continue
 
     print("Wave data received")
     tide_data = get_tide_data(KILLINEY)
