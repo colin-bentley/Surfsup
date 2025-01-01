@@ -225,7 +225,7 @@ def check_conditions():
             continue
 
     print("Wave data received")
-    tide_data = get_tide_data(KILLINEY)
+    tide_data = get_tide_data(LOCATIONS[0])  # Using Killiney Beach location
     if not tide_data:
         print("Failed to get tide data")
         return False  # Add return value
