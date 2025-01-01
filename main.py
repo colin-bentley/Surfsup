@@ -14,7 +14,7 @@ TIDE_WINDOW_HOURS = 2
 class SurfLocation:
     def __init__(self, name, region, timezone, latitude, longitude):
         self.info = LocationInfo(name=name, region=region, timezone=timezone, 
-                               latitude=latitude, longitude=longitude, elevation=0)
+                               latitude=latitude, longitude=longitude)
         self.params = {
             'lat': latitude,
             'lng': longitude,
