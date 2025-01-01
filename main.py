@@ -249,7 +249,7 @@ def check_conditions():
                     wind_speed = hour['windSpeed']['sg'] if 'windSpeed' in hour and 'sg' in hour['windSpeed'] else 0
                     wind_direction = hour['windDirection']['sg'] if 'windDirection' in hour and 'sg' in hour['windDirection'] else 0
 
-                    if wave_height >= WAVE_HEIGHT_THRESHOLD and is_daylight(hour['time']):
+                    if wave_height >= WAVE_HEIGHT_THRESHOLD and is_daylight(hour['time'], location):
                         near_low_tide, tide_time = is_near_low_tide(hour['time'], tide_data)
 
                         if near_low_tide:
