@@ -49,7 +49,9 @@ def degrees_to_cardinal(degrees):
 def is_daylight(check_time, location):
     """Check if time is during daylight hours based on actual sunrise/sunset"""
     time = datetime.strptime(check_time, '%Y-%m-%dT%H:%M:%S+00:00')
-    s = sun(location.info, date=time.date())
+    
+    # Use a simpler method that doesn't require elevation
+    s = sun(location.info.observer, date=time.date())
 
     # Convert time to naive datetime for comparison
     time = time.replace(tzinfo=None)
