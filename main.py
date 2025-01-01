@@ -32,20 +32,6 @@ LOCATIONS = [
         latitude=53.2557,
         longitude=-6.1124
     ),
-    SurfLocation(
-        name="Bundoran",
-        region="Ireland", 
-        timezone="Europe/Dublin",
-        latitude=54.4833,
-        longitude=-8.2833
-    ),
-    SurfLocation(
-        name="Lahinch",
-        region="Ireland",
-        timezone="Europe/Dublin",
-        latitude=52.9349,
-        longitude=-9.3442
-    )
 ]
 
 def degrees_to_cardinal(degrees):
