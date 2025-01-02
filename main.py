@@ -118,7 +118,10 @@ def get_wave_data(location):
     try:
         response = requests.get(url, params=location.params, headers=headers, timeout=10)
         print(f"Wave API Status Code: {response.status_code}")
-        return response.json()
+        data = response.json()
+        print("\nRaw API Response:")
+        print(data)
+        return data
     except requests.Timeout:
         print("Wave API request timed out")
         return None
