@@ -81,12 +81,13 @@ def group_consecutive_times(conditions):
     for i in range(1, len(conditions)):
         current = datetime.strptime(conditions[i]['time'], '%Y-%m-%d %H:%M')
         previous = datetime.strptime(current_group[-1]['time'], '%Y-%m-%d %H:%M')
-        if (current - previous).total_seconds() <= 7200:
+        if (current - previous).total_seconds() <= 3600:  # Group within 1 hour
             current_group.append(conditions[i])
         else:
+            end_time = (previous + timedelta(hours=1)).strftime('%Y-%m-%d %H:%M')
             time_range = format_time_range(
                 current_group[0]['time'],
-                current_group[-1]['time']
+                end_time
             )
             grouped.append({
                 'time': time_range,
