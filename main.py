@@ -84,10 +84,11 @@ def group_consecutive_times(conditions):
         if (current - previous).total_seconds() <= 3600:  # Group within 1 hour
             current_group.append(conditions[i])
         else:
-            end_time = (previous + timedelta(hours=1)).strftime('%Y-%m-%d %H:%M')
+            # Use the actual last time in the group plus one hour
+            last_time = datetime.strptime(current_group[-1]['time'], '%Y-%m-%d %H:%M')
             time_range = format_time_range(
                 current_group[0]['time'],
-                end_time
+                current_group[-1]['time']
             )
             grouped.append({
                 'time': time_range,
@@ -98,12 +99,13 @@ def group_consecutive_times(conditions):
             })
             current_group = [conditions[i]]
 
-    # Add the last group
-    time_range = format_time_range(
-        current_group[0]['time'],
-        current_group[-1]['time']
-    )
-    grouped.append({
+    # Add the last group if not empty
+    if current_group:
+        time_range = format_time_range(
+            current_group[0]['time'],
+            current_group[-1]['time']
+        )
+        grouped.append({
         'time': time_range,
         'wave_height': f"{min(float(c['wave_height']) for c in current_group):.1f}-{max(float(c['wave_height']) for c in current_group):.1f}m",
         'windSpeed': f"{round(min(float(c['windSpeed']) * 3.6 for c in current_group))}-{round(max(float(c['windSpeed']) * 3.6 for c in current_group))}kph",
