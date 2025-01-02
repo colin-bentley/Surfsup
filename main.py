@@ -245,7 +245,7 @@ def check_conditions():
                             good_conditions.append({
                                 'time': time.strftime('%Y-%m-%d %H:%M'),
                                 'wave_height': round(wave_height, 1),
-                                'windSpeed': round(wind_speed * 3.6, 1),  # Convert to kph
+                                'windSpeed': round(wind_speed, 1),  # Keep in m/s, will convert in grouping
                                 'windDirection': round(wind_direction),
                                 'low_tide_time': tide_time.strftime('%H:%M')
                             })
