@@ -143,6 +143,9 @@ def get_tide_data(location):
     try:
         response = requests.get(url, params=tide_params, headers=headers, timeout=10)
         print(f"Tide API Status Code: {response.status_code}")
+        if response.status_code == 402:
+            print("Tide API quota exceeded or payment required")
+            return None
         return response.json()
     except requests.Timeout:
         print("Tide API request timed out")
@@ -223,7 +226,11 @@ def check_conditions():
     tide_data = get_tide_data(LOCATIONS[0])  # Using Killiney Beach location
     if not tide_data:
         print("Failed to get tide data")
-        return False  # Add return value
+        return False
+    
+    if 'data' not in tide_data:
+        print(f"Invalid tide data response: {tide_data}")
+        return False
 
     print("Tide data received")
 
