@@ -173,7 +173,8 @@ def send_email(good_conditions, location):
     msg = MIMEText(message_text)
     msg['Subject'] = '🏄 Surf Alert - Killiney Beach'
     msg['From'] = EMAIL_ADDRESS
-    msg['To'] = EMAIL_ADDRESS
+    recipients = [EMAIL_ADDRESS, ADDITIONAL_EMAIL]
+    msg['To'] = ', '.join(recipients)
 
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
