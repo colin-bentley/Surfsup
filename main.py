@@ -20,7 +20,8 @@ class SurfLocation:
             'lng': longitude,
             'params': 'waveHeight,windDirection,windSpeed',
             'start': datetime.now().isoformat(),
-            'end': (datetime.now() + timedelta(days=5)).isoformat()
+            'end': (datetime.now() + timedelta(days=5)).isoformat(),
+            'windSpeedUnit': 'kph'
         }
 
 # Define locations
