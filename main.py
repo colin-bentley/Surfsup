@@ -93,7 +93,7 @@ def group_consecutive_times(conditions):
             grouped.append({
                 'time': time_range,
                 'wave_height': f"{min(float(c['wave_height']) for c in current_group):.1f}-{max(float(c['wave_height']) for c in current_group):.1f}m",
-                'windSpeed': f"{round(min(float(c['windSpeed']) * 3.6 for c in current_group))}-{round(max(float(c['windSpeed']) * 3.6 for c in current_group))}kph",
+                'windSpeed': f"{round(min(float(c['windSpeed']) for c in current_group))}-{round(max(float(c['windSpeed']) for c in current_group))}kph",
                 'windDirection': degrees_to_cardinal(float(current_group[0]['windDirection'])),
                 'low_tide_time': current_group[0]['low_tide_time']
             })
@@ -108,7 +108,7 @@ def group_consecutive_times(conditions):
         grouped.append({
         'time': time_range,
         'wave_height': f"{min(float(c['wave_height']) for c in current_group):.1f}-{max(float(c['wave_height']) for c in current_group):.1f}m",
-        'windSpeed': f"{round(min(float(c['windSpeed']) * 3.6 for c in current_group))}-{round(max(float(c['windSpeed']) * 3.6 for c in current_group))}kph",
+        'windSpeed': f"{round(min(float(c['windSpeed']) for c in current_group))}-{round(max(float(c['windSpeed']) for c in current_group))}kph",
          'windDirection': degrees_to_cardinal(float(current_group[0]['windDirection'])),
         'low_tide_time': current_group[0]['low_tide_time']
     })
@@ -259,7 +259,7 @@ def check_conditions():
                             good_conditions.append({
                                 'time': time.strftime('%Y-%m-%d %H:%M'),
                                 'wave_height': round(wave_height, 1),
-                                'windSpeed': round(wind_speed, 1),  # Keep in m/s, will convert in grouping
+                                'windSpeed': round(wind_speed, 1),  # API returns in kph
                                 'windDirection': round(wind_direction),
                                 'low_tide_time': tide_time.strftime('%H:%M')
                             })
