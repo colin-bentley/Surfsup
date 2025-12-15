@@ -169,7 +169,7 @@ def send_email(good_conditions, location):
     message_text = f"🏄 Surf Alert - {location.info.name}!\n\n"
     for condition in good_conditions:
         message_text += f"{condition['time']}\n"
-        message_text += f"Wave Height: {condition['wave_height']}m\n"
+        message_text += f"Wave Height: {condition['wave_height']}\n"
         message_text += f"Wind: {condition['windSpeed']} from {condition['windDirection']}\n"
         message_text += f"Low Tide at: {condition['low_tide_time']}\n\n"
         message_text += "https://www.windguru.cz/47766/\n\n"
@@ -195,7 +195,7 @@ def send_whatsapp(good_conditions):
 
     for condition in good_conditions:
         message_text += f"{condition['time']}\n"
-        message_text += f"Wave Height: {condition['wave_height']}m\n"
+        message_text += f"Wave Height: {condition['wave_height']}\n"
         message_text += f"Wind: {condition['windSpeed']} from {condition['windDirection']}\n"
         message_text += f"Low Tide at: {condition['low_tide_time']}\n\n"
     try:
